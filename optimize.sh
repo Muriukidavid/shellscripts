@@ -1,6 +1,7 @@
 #!/bin/bash 
 JPEGTRAN=$(which jpegtran)
 GM=$(which gm)
+PARALLEL=$(which parallel)
 SIZE=$1 #1st command line argument: the % resize value e.g 40% for 40% reduction in pixel resolution
 QUALITY=$2 #2nd command line arguement: the conversion quality e.g 80 for 80% of original JPG quality
 DEBUG=$3 #print sizes
@@ -11,7 +12,9 @@ fi
 if !(echo "$GM" | grep -sw "/usr/bin/gm" > /dev/null); then
 	sudo apt-get install graphicsmagick
 fi
-
+if !(echo "$PARALLEL" | grep -sw "/usr/bin/parallel" > /dev/null); then
+	sudo apt-get install parallel
+fi
 # resize value and quality arguments must be supplied
 #if ([ -z "$1" ] || [[ $1 = ^[0-9]{2} ]]); then
 if ([ -z "$1" ] ||[ -z "$1" ]) ; then
@@ -44,8 +47,10 @@ if [[ $reply == "y" ]]; then
 		echo "Before conversion:"
 		ls -s -h --hide=*.sh
 	fi
-	find . -mindepth 1 -maxdepth 1 ! -name *.sh -exec jpegtran -copy none -progressive -outfile "{}" "{}" \;
-	find . -mindepth 1 -maxdepth 1 ! -name *.sh -exec gm convert "{}" -resize $SIZE% -quality $QUALITY -interlace Line "{}" \;
+	#find . -mindepth 1 -maxdepth 1 ! -name *.sh -exec jpegtran -copy none -progressive -outfile "{}" "{}" \;
+	#find . -mindepth 1 -maxdepth 1 ! -name *.sh -exec gm convert "{}" -resize $SIZE% -quality $QUALITY -interlace Line "{}" \;
+	find . -mindepth 1 -maxdepth 1 ! -name *.sh | parallel -j 4 jpegtran -copy none -progressive -outfile "{}" "{}" \;
+	find . -mindepth 1 -maxdepth 1 ! -name *.sh | parallel -j 4 gm convert "{}" -resize $SIZE% -quality $QUALITY -interlace Line "{}" \;
 	echo "Done."
 	if([[ $DEBUG -eq 1 ]]); then
 		echo ""
